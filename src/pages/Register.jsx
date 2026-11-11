@@ -1,58 +1,108 @@
-import React from 'react'
-import { Footer, Navbar } from "../components";
-import { Link } from 'react-router-dom';
-const Register = () => {
-    return (
-        <>
-            <Navbar />
-            <div className="container my-3 py-3">
-                <h1 className="text-center">Register</h1>
-                <hr />
-                <div class="row my-4 h-100">
-                    <div className="col-md-4 col-lg-4 col-sm-8 mx-auto">
-                        <form>
-                            <div class="form my-3">
-                                <label for="Name">Full Name</label>
-                                <input
-                                    type="email"
-                                    class="form-control"
-                                    id="Name"
-                                    placeholder="Enter Your Name"
-                                />
-                            </div>
-                            <div class="form my-3">
-                                <label for="Email">Email address</label>
-                                <input
-                                    type="email"
-                                    class="form-control"
-                                    id="Email"
-                                    placeholder="name@example.com"
-                                />
-                            </div>
-                            <div class="form  my-3">
-                                <label for="Password">Password</label>
-                                <input
-                                    type="password"
-                                    class="form-control"
-                                    id="Password"
-                                    placeholder="Password"
-                                />
-                            </div>
-                            <div className="my-3">
-                                <p>Already has an account? <Link to="/login" className="text-decoration-underline text-info">Login</Link> </p>
-                            </div>
-                            <div className="text-center">
-                                <button class="my-2 mx-auto btn btn-dark" type="submit" disabled>
-                                    Register
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <Footer />
-        </>
-    )
-}
 
-export default Register
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+const Register = () => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (form.password.length < 6) {
+      return setError("Password must contain at least 6 characters.");
+    }
+
+    if (form.password !== form.confirmPassword) {
+      return setError("Passwords do not match!");
+    }
+
+    const result = register(
+      form.name.trim(),
+      form.email.trim(),
+      form.password
+    );
+
+    if (!result.success) {
+      return setError(result.message);
+    }
+
+    navigate("/");
+  };
+
+  return (
+    <div className="container py-5">
+      <div className="card shadow mx-auto p-4" style={{ maxWidth: "450px" }}>
+        <h2 className="text-center mb-4">Create Account</h2>
+
+        {error && <div className="alert alert-danger">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <input
+            className="form-control mb-3"
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="form-control mb-3"
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="form-control mb-3"
+            type="password"
+            name="password"
+            placeholder="Password (minimum 6 characters)"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="form-control mb-3"
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+
+          <button className="btn btn-dark w-100" type="submit">
+            Register
+          </button>
+        </form>
+
+        <p className="text-center mt-3">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default Register;
