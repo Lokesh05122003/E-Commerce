@@ -1,9 +1,13 @@
 
 import React, { createContext, useContext, useState } from "react";
+import { useDispatch } from "react-redux";
+import { clearCart } from "../redux/action";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const dispatch = useDispatch();
+
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("loggedInUser");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -12,37 +16,42 @@ export const AuthProvider = ({ children }) => {
   const register = (name, email, password) => {
     const users = JSON.parse(localStorage.getItem("users") || "[]");
 
+    const normalizedEmail = email.toLowerCase();
+
     const existingUser = users.find(
-      (u) => u.email === email.toLowerCase()
+      (u) => u.email === normalizedEmail
     );
 
     if (existingUser) {
-      return { success: false, message: "Email already registered!" };
+      return {
+        success: false,
+        message: "Email already registered!",
+      };
     }
 
     const newUser = {
       id: Date.now(),
       name,
-      email: email.toLowerCase(),
-      password
+      email: normalizedEmail,
+      password,
     };
 
     users.push(newUser);
     localStorage.setItem("users", JSON.stringify(users));
 
-    setUser({
+    const loggedInUser = {
       id: newUser.id,
       name: newUser.name,
-      email: newUser.email
-    });
+      email: newUser.email,
+    };
 
+    // Clear previous user's cart
+    dispatch(clearCart());
+
+    setUser(loggedInUser);
     localStorage.setItem(
       "loggedInUser",
-      JSON.stringify({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email
-      })
+      JSON.stringify(loggedInUser)
     );
 
     return { success: true };
@@ -51,24 +60,29 @@ export const AuthProvider = ({ children }) => {
   const login = (email, password) => {
     const users = JSON.parse(localStorage.getItem("users") || "[]");
 
+    const normalizedEmail = email.toLowerCase();
+
     const foundUser = users.find(
       (u) =>
-        u.email === email.toLowerCase() &&
+        u.email === normalizedEmail &&
         u.password === password
     );
 
     if (!foundUser) {
       return {
         success: false,
-        message: "Invalid email or password!"
+        message: "Invalid email or password!",
       };
     }
 
     const loggedInUser = {
       id: foundUser.id,
       name: foundUser.name,
-      email: foundUser.email
+      email: foundUser.email,
     };
+
+    // Clear previous cart on every successful login
+    dispatch(clearCart());
 
     setUser(loggedInUser);
 
@@ -81,6 +95,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear cart when user logs out
+    dispatch(clearCart());
+
     setUser(null);
     localStorage.removeItem("loggedInUser");
   };
